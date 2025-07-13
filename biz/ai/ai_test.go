@@ -1,11 +1,13 @@
 package ai
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
 
+	"Guoaking/gotools/biz/ali"
 	"Guoaking/gotools/tools"
 )
 
@@ -17,7 +19,7 @@ import (
 
 func TestA(t *testing.T) {
 	//o1()
-	//getJson()
+	getJson()
 }
 
 func GetMetaJson(dir string) []string {
@@ -59,5 +61,35 @@ func One(res *[]string, dir string, f func(entry os.DirEntry) bool) {
 
 func getJson() {
 	dir := "/Users/bytedance/Downloads/图片"
-	GetMetaJson(dir)
+	files := GetMetaJson(dir)
+	for _, file := range files {
+		ReadJson(file)
+	}
+}
+
+func ReadJson(filename string) {
+
+	file, err := os.ReadFile(filename)
+	if err != nil {
+		fmt.Printf("read file error: %v\n", err)
+		return
+	}
+
+	var D ali.I18nProduct
+	err = json.Unmarshal(file, &D)
+	if err != nil {
+		fmt.Printf("json unmarshal error: %v\n", err)
+		return
+	}
+
+	product, ok := D["zh-cn"]
+	if !ok || len(product.DescAll) == 0 || product.Title != "" || product.Desc != "" {
+		return
+	}
+
+	//product.BaseName
+	//product.DescAll
+
+	//func ()
+	//return title, desc
 }

@@ -37,10 +37,13 @@ func o1() {
 				{
 					// 系统消息角色，用于设置对话的上下文和行为。通常由开发者提供，用于指导模型的行为，例如设定模型的身份、风格、任务等。
 					//使用场景：可以用来定义模型的基本属性，如要求模型以某种特定的语气回复，或者告知模型当前的任务是什么。
+					// 回复格式: {"
+					//"}
 					Role:    openai.ChatMessageRoleSystem,
 					Content: "You are a helpful assistant.",
 				},
 				{
+					//
 					Role:    openai.ChatMessageRoleUser,
 					Content: "Hello!",
 				},
