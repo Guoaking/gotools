@@ -237,3 +237,14 @@ func OCROneProduct(dir, lang string, f []string) {
 	}
 
 }
+
+func TestTrans(t *testing.T) {
+	res, err := TransTxt("无人机", "zh-tw")
+	if err != nil {
+		fmt.Printf("output: %v\n", err)
+		return
+	}
+
+	fmt.Printf("output: %v\n", res)
+
+}

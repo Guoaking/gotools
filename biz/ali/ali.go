@@ -157,6 +157,63 @@ func TransImage(filename string) (_err error) {
 	return _err
 }
 
+func TransTxt(txt, target string) (_res string, _err error) {
+	client, _err := CreateImgClient()
+	if _err != nil {
+		return
+	}
+
+	translateGeneralRequest := &alimt20181012.TranslateGeneralRequest{
+		FormatType:     tea.String("text"),
+		SourceLanguage: tea.String("zh"),
+		TargetLanguage: tea.String(target),
+		SourceText:     tea.String(txt),
+		Scene:          tea.String("general"),
+		Context:        tea.String(""),
+	}
+	runtime := &util.RuntimeOptions{}
+	tryErr := func() (_e error) {
+		defer func() {
+			if r := tea.Recover(recover()); r != nil {
+				_e = r
+			}
+		}()
+		// 复制代码运行请自行打印 API 的返回值
+		res, _err := client.TranslateGeneralWithOptions(translateGeneralRequest, runtime)
+		if _err != nil {
+			return _err
+		}
+
+		_res = *res.Body.Data.Translated
+		return nil
+	}()
+
+	if tryErr != nil {
+		var error = &tea.SDKError{}
+		if _t, ok := tryErr.(*tea.SDKError); ok {
+			error = _t
+		} else {
+			error.Message = tea.String(tryErr.Error())
+		}
+		// 此处仅做打印展示，请谨慎对待异常处理，在工程项目中切勿直接忽略异常。
+		// 错误 message
+		fmt.Println(tea.StringValue(error.Message))
+		// 诊断地址
+		var data interface{}
+		d := json.NewDecoder(strings.NewReader(tea.StringValue(error.Data)))
+		d.Decode(&data)
+		if m, ok := data.(map[string]interface{}); ok {
+			recommend, _ := m["Recommend"]
+			fmt.Println(recommend)
+		}
+		_, _err = util.AssertAsString(error.Message)
+		if _err != nil {
+			return
+		}
+	}
+	return
+}
+
 func DownImage(url string) []byte {
 	newRequest, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -241,21 +298,64 @@ func OcrImage(filename string) (_res string, _err error) {
 	return
 }
 
-//curl 'https://cdn.translate.alibaba.com/r/1e55a01512a24f85b67c2317cff59fae.jpg' \
-//  -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7' \
-//  -H 'Accept-Language: zh-CN,zh;q=0.9' \
-//  -H 'Cache-Control: no-cache' \
-//  -H 'Connection: keep-alive' \
-//  -b '_samesite_flag_=true; cookie2=19db3951ef496dbce32d92fb92bc4c41; t=096ee7eee9a93a67922f19e9e9faf27b; _tb_token_=e471e6e554e7e; ali_apache_id=33.50.128.217.1739786695497.720779.4; isg=BOXl1IbT7ldZlAqLXrPSjzam9KcfIpm0L344rOfKiZwr_gRwr3CshYeUiGKIfrFs' \
-//  -H 'DNT: 1' \
-//  -H 'Pragma: no-cache' \
-//  -H 'Sec-Fetch-Dest: document' \
-//  -H 'Sec-Fetch-Mode: navigate' \
-//  -H 'Sec-Fetch-Site: none' \
-//  -H 'Sec-Fetch-User: ?1' \
-//  -H 'Upgrade-Insecure-Requests: 1' \
-//  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36' \
-//  -H 'sec-ch-ua: "Not)A;Brand";v="8", "Chromium";v="138"' \
-//  -H 'sec-ch-ua-mobile: ?0' \
-//  -H 'sec-ch-ua-platform: "macOS"' \
-//  -H 'x-no-edit-page: 1'
+func _main(txt, target string) (_err error) {
+	client, _err := CreateImgClient()
+	if _err != nil {
+		return _err
+	}
+
+	getBatchTranslateRequest := &alimt20181012.GetBatchTranslateRequest{
+		FormatType:     tea.String("text"),
+		SourceLanguage: tea.String("zh"),
+		TargetLanguage: tea.String(target),
+		Scene:          tea.String("general"),
+		ApiType:        tea.String("translate_standard"),
+		// { "11": "hello boy", "12": "go home", "13": "we can" }
+		// 待翻译的条数不能超过 50
+		// 单条翻译字符数不能超过 1000 字符
+		// 总字符数不能超过 8000 字符
+		// key 不会计入翻译的字符
+		// 待翻译的内容中，标点、空格、html 标签均会计入字符
+		SourceText: tea.String(txt),
+	}
+	runtime := &util.RuntimeOptions{}
+	tryErr := func() (_e error) {
+		defer func() {
+			if r := tea.Recover(recover()); r != nil {
+				_e = r
+			}
+		}()
+		// 复制代码运行请自行打印 API 的返回值
+		_, _err = client.GetBatchTranslateWithOptions(getBatchTranslateRequest, runtime)
+		if _err != nil {
+			return _err
+		}
+
+		return nil
+	}()
+
+	if tryErr != nil {
+		var error = &tea.SDKError{}
+		if _t, ok := tryErr.(*tea.SDKError); ok {
+			error = _t
+		} else {
+			error.Message = tea.String(tryErr.Error())
+		}
+		// 此处仅做打印展示，请谨慎对待异常处理，在工程项目中切勿直接忽略异常。
+		// 错误 message
+		fmt.Println(tea.StringValue(error.Message))
+		// 诊断地址
+		var data interface{}
+		d := json.NewDecoder(strings.NewReader(tea.StringValue(error.Data)))
+		d.Decode(&data)
+		if m, ok := data.(map[string]interface{}); ok {
+			recommend, _ := m["Recommend"]
+			fmt.Println(recommend)
+		}
+		_, _err = util.AssertAsString(error.Message)
+		if _err != nil {
+			return _err
+		}
+	}
+	return _err
+}
