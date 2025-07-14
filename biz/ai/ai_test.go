@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -18,13 +19,13 @@ import (
 **/
 
 func TestA(t *testing.T) {
-	//o1()
 	getJson()
+
 }
 
 func GetMetaJson(dir string) []string {
 	var res []string
-	One(&res, dir, func(entry os.DirEntry) bool {
+	One1(&res, dir, func(entry os.DirEntry) bool {
 		if strings.Contains(strings.ToLower(entry.Name()), "meta.json") {
 			return true
 		}
@@ -41,7 +42,7 @@ func GetMetaJson(dir string) []string {
 	return res
 }
 
-func One(res *[]string, dir string, f func(entry os.DirEntry) bool) {
+func One1(res *[]string, dir string, f func(entry os.DirEntry) bool) {
 	dirs, err := tools.ListFilesInCurrentDirFilter2(dir, f)
 
 	if err != nil {
@@ -55,41 +56,114 @@ func One(res *[]string, dir string, f func(entry os.DirEntry) bool) {
 			*res = append(*res, d1)
 			continue
 		}
-		One(res, d1, f)
+		One1(res, d1, f)
 	}
 }
 
 func getJson() {
 	dir := "/Users/bytedance/Downloads/图片"
+	background := context.Background()
 	files := GetMetaJson(dir)
 	for _, file := range files {
-		ReadJson(file)
+		readJson := ReadJson(file)
+		base, desc := GetCNInfo(readJson)
+
+		if base == "" || desc == "" {
+			continue
+		}
+		data := Msg{
+			BaseName: base,
+			DescALl:  desc,
+		}
+
+		marshal, err := json.Marshal(data)
+		if err != nil {
+			fmt.Printf("output: %v\n", err)
+			return
+		}
+		fmt.Printf("output: %s\n", marshal)
+
+		one := One(background, string(marshal))
+
+		var D2 ali.TaD
+		err = json.Unmarshal([]byte(one), &D2)
+		if err != nil {
+			fmt.Printf("output: %v\n", err)
+			return
+		}
+
+		product, ok := readJson["zh-cn"]
+		if !ok {
+			return
+		}
+
+		product.Title = D2.Title
+		product.Desc = D2.Desc
+		readJson["zh-cn"] = product
+
+		marshal, err3 := json.Marshal(readJson)
+		if err3 != nil {
+			fmt.Printf("output: %v\n", err3)
+			return
+		}
+
+		name := file + ".txt"
+		fmt.Printf("output:name %v\n", name)
+		err3 = os.WriteFile(name, marshal, os.ModePerm)
+		if err3 != nil {
+			fmt.Printf("output: %v\n", err3)
+			return
+		}
+
+		break
 	}
 }
 
-func ReadJson(filename string) {
+type Msg struct {
+	BaseName string `json:"base_name"`
+	DescALl  string `json:"desc_all"`
+}
+
+func GetCNInfo(D ali.I18nProduct) (string, string) {
+	product, ok := D["zh-cn"]
+	if !ok || len(product.DescAll) == 0 || product.Title != "" || product.Desc != "" {
+		return "", ""
+	}
+	return product.BaseName, strings.Join(product.DescAll, ",")
+}
+
+func ReadJson(filename string) ali.I18nProduct {
 
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		fmt.Printf("read file error: %v\n", err)
-		return
+		return nil
 	}
 
 	var D ali.I18nProduct
 	err = json.Unmarshal(file, &D)
 	if err != nil {
 		fmt.Printf("json unmarshal error: %v\n", err)
+		return nil
+	}
+
+	return D
+}
+
+func Test2(t *testing.T) {
+	one := `{
+    "status": "success",
+    "data": {
+        "title": "高清航拍玩具无人机 稳定悬停",
+        "desc": "升级无刷电机稳定飞行，高清航拍远近皆清晰，带屏遥控操作便捷，光流定位悬停更安全。"
+    }
+}`
+	var D2 ali.Ai
+	err := json.Unmarshal([]byte(one), &D2)
+	if err != nil {
+		fmt.Printf("output: %v\n", err)
 		return
 	}
 
-	product, ok := D["zh-cn"]
-	if !ok || len(product.DescAll) == 0 || product.Title != "" || product.Desc != "" {
-		return
-	}
-
-	//product.BaseName
-	//product.DescAll
-
-	//func ()
-	//return title, desc
+	fmt.Printf("output:D2 %v\n", D2)
 }

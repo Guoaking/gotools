@@ -35,11 +35,22 @@ type OcrData struct {
 type I18nProduct map[string]LocalProduct
 
 type LocalProduct struct {
-	Title    string   `json:"title"`
-	Desc     string   `json:"desc"`
+	//Title    string   `json:"title"`
+	//Desc     string   `json:"desc"`
+	TaD
 	DescAll  []string `json:"desc_all,omitempty"` // ocr出来的一组数据,喂给ai返回 title 和desc
 	BaseName string   `json:"base_name"`
 	Price    string   `json:"price"`
 	Cate     string   `json:"cate"`
 	Dir      string   `json:"dir"`
+}
+
+type Ai struct {
+	Status string `json:"status"`
+	Data   TaD    `json:"data"`
+}
+
+type TaD struct {
+	Title string `json:"title"`
+	Desc  string `json:"desc"`
 }
