@@ -66,9 +66,6 @@ func MvTo(dirPath, NewDirName string) {
 	}
 }
 
-func countTo() {
-
-}
 func ReNameTo(dirPath, NewDirName string) {
 	//name := NewDirName
 	dirAny, err := tools.ListFilesInCurrentDirAny(dirPath)
@@ -239,6 +236,8 @@ func OCROneProduct(dir, lang string, f []string) {
 }
 
 func TestTrans(t *testing.T) {
+	// 读取json的参数
+
 	res, err := TransTxt("无人机", "zh-tw")
 	if err != nil {
 		fmt.Printf("output: %v\n", err)

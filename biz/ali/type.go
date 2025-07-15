@@ -39,7 +39,7 @@ type LocalProduct struct {
 	//Desc     string   `json:"desc"`
 	TaD
 	DescAll  []string `json:"desc_all,omitempty"` // ocr出来的一组数据,喂给ai返回 title 和desc
-	BaseName string   `json:"base_name"`
+	BaseName string   `json:"base_name,omitempty"`
 	Price    string   `json:"price"`
 	Cate     string   `json:"cate"`
 	Dir      string   `json:"dir"`

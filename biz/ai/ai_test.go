@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -19,8 +20,9 @@ import (
 **/
 
 func TestA(t *testing.T) {
-	getJson()
-
+	step1AI()
+	//step2Check()
+	step3TransTo()
 }
 
 func GetMetaJson(dir string) []string {
@@ -52,7 +54,6 @@ func One1(res *[]string, dir string, f func(entry os.DirEntry) bool) {
 
 	for _, d1 := range dirs {
 		if strings.Contains(strings.ToLower(d1), "meta.json") {
-			//fmt.Printf("output: %v, %v \n", i, d1)
 			*res = append(*res, d1)
 			continue
 		}
@@ -60,20 +61,22 @@ func One1(res *[]string, dir string, f func(entry os.DirEntry) bool) {
 	}
 }
 
-func getJson() {
+func step1AI() {
 	dir := "/Users/bytedance/Downloads/图片"
 	background := context.Background()
 	files := GetMetaJson(dir)
 	for _, file := range files {
 		readJson := ReadJson(file)
-		base, desc := GetCNInfo(readJson)
 
-		if base == "" || desc == "" {
+		product, ok := readJson["zh-cn"]
+
+		if !ok || len(product.DescAll) == 0 || product.Title != "" || product.Desc != "" {
 			continue
 		}
+
 		data := Msg{
-			BaseName: base,
-			DescALl:  desc,
+			BaseName: product.BaseName,
+			DescALl:  strings.Join(product.DescAll, ","),
 		}
 
 		marshal, err := json.Marshal(data)
@@ -88,17 +91,13 @@ func getJson() {
 		var D2 ali.TaD
 		err = json.Unmarshal([]byte(one), &D2)
 		if err != nil {
-			fmt.Printf("output: %v\n", err)
-			return
-		}
-
-		product, ok := readJson["zh-cn"]
-		if !ok {
+			fmt.Printf("output:获取dp的结果失败:  %v\n", err)
 			return
 		}
 
 		product.Title = D2.Title
 		product.Desc = D2.Desc
+		product.Dir = path.Join(path.Dir(file), "zh-cn")
 		readJson["zh-cn"] = product
 
 		marshal, err3 := json.Marshal(readJson)
@@ -107,7 +106,7 @@ func getJson() {
 			return
 		}
 
-		name := file + ".txt"
+		name := file
 		fmt.Printf("output:name %v\n", name)
 		err3 = os.WriteFile(name, marshal, os.ModePerm)
 		if err3 != nil {
@@ -115,21 +114,31 @@ func getJson() {
 			return
 		}
 
-		break
+	}
+}
+
+func step2Check() {
+	dir := "/Users/bytedance/Downloads/图片"
+	files := GetMetaJson(dir)
+	for _, file := range files {
+		readJson := ReadJson(file)
+
+		product, ok := readJson["zh-cn"]
+
+		if !ok {
+			continue
+		}
+
+		if product.Title == "" || product.Desc == "" {
+
+			fmt.Printf("output: %v\n", file)
+		}
 	}
 }
 
 type Msg struct {
 	BaseName string `json:"base_name"`
 	DescALl  string `json:"desc_all"`
-}
-
-func GetCNInfo(D ali.I18nProduct) (string, string) {
-	product, ok := D["zh-cn"]
-	if !ok || len(product.DescAll) == 0 || product.Title != "" || product.Desc != "" {
-		return "", ""
-	}
-	return product.BaseName, strings.Join(product.DescAll, ",")
 }
 
 func ReadJson(filename string) ali.I18nProduct {
@@ -150,20 +159,60 @@ func ReadJson(filename string) ali.I18nProduct {
 	return D
 }
 
-func Test2(t *testing.T) {
-	one := `{
-    "status": "success",
-    "data": {
-        "title": "高清航拍玩具无人机 稳定悬停",
-        "desc": "升级无刷电机稳定飞行，高清航拍远近皆清晰，带屏遥控操作便捷，光流定位悬停更安全。"
-    }
-}`
-	var D2 ali.Ai
-	err := json.Unmarshal([]byte(one), &D2)
-	if err != nil {
-		fmt.Printf("output: %v\n", err)
-		return
-	}
+func step3TransTo() {
+	dir := "/Users/bytedance/Downloads/图片"
+	files := GetMetaJson(dir)
 
-	fmt.Printf("output:D2 %v\n", D2)
+	targetLang := "zh-tw"
+
+	for _, file := range files {
+		readJson := ReadJson(file)
+
+		targetprod, ok := readJson[targetLang]
+		if ok && targetprod.Title != "" && targetprod.Desc != "" {
+			continue
+		}
+
+		product, ok := readJson["zh-cn"]
+		if !ok || product.Title == "" || product.Desc == "" {
+			continue
+		}
+
+		title, err := ali.TransTxt(product.Title, targetLang)
+		if err != nil {
+			fmt.Printf("output1: %v\n", err)
+			return
+		}
+		desc, err := ali.TransTxt(product.Desc, targetLang)
+		if err != nil {
+			fmt.Printf("output2: %v\n", err)
+			return
+		}
+
+		//拿到结果 组装并保存
+		readJson[targetLang] = ali.LocalProduct{
+			TaD: ali.TaD{
+				Title: title,
+				Desc:  desc,
+			},
+			Dir:   path.Join(path.Dir(file), targetLang),
+			Price: "",
+			Cate:  product.Cate,
+		}
+
+		marshal, err3 := json.Marshal(readJson)
+		if err3 != nil {
+			fmt.Printf("output: %v\n", err3)
+			return
+		}
+
+		name := file
+		fmt.Printf("output:name %v\n", name)
+		err3 = os.WriteFile(name, marshal, os.ModePerm)
+		if err3 != nil {
+			fmt.Printf("output: %v\n", err3)
+			return
+		}
+
+	}
 }
